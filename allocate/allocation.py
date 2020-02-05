@@ -59,7 +59,8 @@ def solution_to_csv(solution: Dict[str, List[str]], output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Allocate tutors to sessions")
+    parser = argparse.ArgumentParser(prog="allocate",
+                                     description="Allocate tutors to sessions")
 
     parser.add_argument('tutors', type=str,
                         help='CSV file containing tutor details')
@@ -68,10 +69,8 @@ def main():
     parser.add_argument('availability', type=str,
                         help='CSV file of tutors availabilities to sessions')
 
-    parser.add_argument('--json', type=bool, default=False,
-                        help='Output solution as a JSON object')
-    parser.add_argument('--csv', type=bool, default=True,
-                        help='Output solution as a CSV')
+    parser.add_argument('--json', action="store_true",
+                        help='Output solution as a JSON object instead of default')
 
     args = parser.parse_args()
 
@@ -98,8 +97,7 @@ def main():
     else:
         if args.json:
             pprint.pprint(solution)
-
-        if args.csv:
+        else:
             solution_to_csv(solution, sys.stdout)
 
 
