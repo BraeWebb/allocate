@@ -20,6 +20,34 @@ def solution_to_csv(solution: Dict[str, List[str]], output):
         writer.writerow([name, *sessions])
 
 
+def run_allocation(tutors: str, sessions: str, availability: str,
+                   json: bool=False):
+    tutor_model = CSVModel(Tutor)
+    tutor_model.load(tutors, allow_defaults=True)
+    tutor_model = list(tutor_model)
+
+    session_model = CSVModel(Session)
+    session_model.load(sessions, allow_defaults=True)
+    session_model = list(session_model)
+
+    availability = parse_doodle_hack(availability, tutor_model, session_model)
+
+    for message in validate_availability(availability):
+        print(message)
+
+    engine = Engine(tutor_model, session_model, availability)
+    solution = engine.solve()
+
+    if solution is None:
+        print("No allocation was found because the allocation is infeasible.")
+        print("Please ensure that a valid allocation is possible based on tutor availability.")
+        print("If you think something is wrong, contact Brae at b.webb@uq.edu.au")
+    else:
+        if json:
+            pprint.pprint(solution)
+        else:
+            solution_to_csv(solution, sys.stdout)
+
 def main():
     parser = argparse.ArgumentParser(prog="allocate",
                                      description="Allocate tutors to sessions")
@@ -36,31 +64,7 @@ def main():
 
     args = parser.parse_args()
 
-    tutors = CSVModel(Tutor)
-    tutors.load(args.tutors, allow_defaults=True)
-    tutors = list(tutors)
-
-    sessions = CSVModel(Session)
-    sessions.load(args.sessions, allow_defaults=True)
-    sessions = list(sessions)
-
-    availability = parse_doodle_hack(args.availability, tutors, sessions)
-
-    for message in validate_availability(availability):
-        print(message)
-
-    engine = Engine(tutors, sessions, availability)
-    solution = engine.solve()
-
-    if solution is None:
-        print("No allocation was found because the allocation is infeasible.")
-        print("Please ensure that a valid allocation is possible based on tutor availability.")
-        print("If you think something is wrong, contact Brae at b.webb@uq.edu.au")
-    else:
-        if args.json:
-            pprint.pprint(solution)
-        else:
-            solution_to_csv(solution, sys.stdout)
+    run_allocation(args.tutors, args.sessions, args.availability, json=args.json)
 
 
 if __name__ == '__main__':
