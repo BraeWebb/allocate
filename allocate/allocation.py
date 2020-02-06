@@ -2,51 +2,13 @@ import csv
 import sys
 import pprint
 import argparse
-from typing import Dict, Tuple, List
-from itertools import islice
+from typing import Dict, List
 
 from allocate.solver import validate_availability, Engine
-from allocate.model import CSVModel, Tutor, Session
-from allocate.doodle import parse_doodle, TimeSlot, _assign_columns_timeslots
+from allocate.model import Tutor, Session
+from allocate.csvalidator import CSVModel
+from allocate.doodle import parse_doodle_hack
 
-
-def parse_doodle_hack(filename: str, tutors: List[Tutor],
-                      sessions: List[Session]) \
-        -> Dict[Tuple[Tutor, Session], bool]:
-    """Parse a Doodle CSV to create a dictionary that maps a tutor name
-    to a list of all their available time slots.
-
-    Hacked version to support the way the allocation engine requires.
-    """
-    tutor_map = {tutor.name: tutor for tutor in tutors}
-    session_map = {TimeSlot(session.day.value, session.start_time,
-                            session.duration): session for session in sessions}
-
-    with open(filename, 'r') as file:
-        reader = csv.reader(file)
-
-        # skip the first 4 rows since it is just doodle garbage
-        reader = islice(reader, 4, None)
-
-        day_row = next(reader)
-        time_row = next(reader)
-        days = _assign_columns_timeslots(day_row, time_row)
-
-        availabilities = {}
-        for row in reader:
-            name = row[0]
-
-            # last row is always a count of availabilities for a timeslot
-            if name == "Count":
-                break
-
-            # add every availability timeslot
-            for column, status in islice(enumerate(row), 1, None):
-                tutor = tutor_map[name]
-                session = session_map[days[column]]
-                availabilities[(tutor, session)] = status == "OK"
-
-        return availabilities
 
 def solution_to_csv(solution: Dict[str, List[str]], output):
     """Convert the solution dictionary produced by the solver into a
@@ -99,7 +61,6 @@ def main():
             pprint.pprint(solution)
         else:
             solution_to_csv(solution, sys.stdout)
-
 
 
 if __name__ == '__main__':
