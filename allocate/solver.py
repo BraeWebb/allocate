@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Iterable, Dict, Tuple, Any
 
-from ortools.sat.python import cp_model # type: ignore
+from ortools.sat.python import cp_model  # type: ignore
 
 from allocate.model import Tutor, Session
 
