@@ -1,7 +1,7 @@
 from collections import defaultdict
-from typing import List, Dict, Tuple
+from typing import Iterable, Dict, Tuple, Any
 
-from ortools.sat.python import cp_model
+from ortools.sat.python import cp_model # type: ignore
 
 from allocate.model import Tutor, Session
 
@@ -12,8 +12,8 @@ def validate_availability(availabilities: Dict[Tuple[Tutor, Session], bool]):
 
     Yields as messages any issues encountered.
     """
-    tutor_avail = defaultdict(int)
-    session_avail = defaultdict(int)
+    tutor_avail: Dict[Any, int] = defaultdict(int)
+    session_avail: Dict[Any, int] = defaultdict(int)
 
     for (tutor, session), available in availabilities.items():
         if available:
@@ -35,7 +35,7 @@ class Engine:
 
     If there are questions about this magic please contact Henry (just kidding Henry has a life now)
     """
-    def __init__(self, tutors: List[Tutor], sessions: List[Session], avail: Dict[Tuple[Tutor, Session], bool]):
+    def __init__(self, tutors: Iterable[Tutor], sessions: Iterable[Session], avail: Dict[Tuple[Tutor, Session], bool]):
         self._model = cp_model.CpModel()
         self._vars: Dict[Tuple[Tutor, Session], cp_model.IntVar] = {}
         self._tutors = tutors
@@ -77,12 +77,12 @@ class Engine:
 
     def assert_lower_hr_limit(self, tutor):
         if tutor.lower_hr_limit is not None:
-            self._model.Add(tutor.lower_hr_limit <= sum([self._vars[(tutor, s)]*s.duration
+            self._model.Add(tutor.lower_hr_limit <= sum([self._vars[(tutor, s)] * s.duration
                                                          for s in self._sessions]))
 
     def assert_upper_hr_limit(self, tutor):
         if tutor.upper_hr_limit is not None:
-            self._model.Add(tutor.upper_hr_limit >= sum([self._vars[(tutor, s)]*s.duration
+            self._model.Add(tutor.upper_hr_limit >= sum([self._vars[(tutor, s)] * s.duration
                                                          for s in self._sessions]))
 
     def assert_juniors(self):

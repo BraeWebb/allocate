@@ -4,6 +4,7 @@ from contextlib import redirect_stdout
 
 from allocate.allocation import run_allocation
 
+
 class AllocationTest(TestCase):
     EXPECTED_ALLOCATION = """Henry,T01,P01,P02,P03,P05
 Brae,T04,P01,P03,P04,P05

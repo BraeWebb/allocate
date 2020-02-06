@@ -23,6 +23,7 @@ Example:
         print(tutor)
 """
 import csv
+from typing import List
 
 
 class InvalidCSVFile(Exception):
@@ -44,9 +45,9 @@ class CSVModel:
         """Construct a new CSV model based on the provided model"""
         self._model = model
         self._fields = self._model.__annotations__.keys()
-        self._rows = []
+        self._rows: List = []
 
-    def load(self, filename: str, allow_defaults: bool=False):
+    def load(self, filename: str, allow_defaults: bool = False):
         """Load a new CSV file into the model.
 
         Throws InvalidCSVFile exception when the CSV file doesn't match the

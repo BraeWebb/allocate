@@ -21,21 +21,19 @@ def solution_to_csv(solution: Dict[str, List[str]], output):
 
 
 def run_allocation(tutors: str, sessions: str, availability: str,
-                   json: bool=False):
+                   json: bool = False):
     tutor_model = CSVModel(Tutor)
     tutor_model.load(tutors, allow_defaults=True)
-    tutor_model = list(tutor_model)
 
     session_model = CSVModel(Session)
     session_model.load(sessions, allow_defaults=True)
-    session_model = list(session_model)
 
-    availability = parse_doodle_hack(availability, tutor_model, session_model)
+    availability_data = parse_doodle_hack(availability, tutor_model, session_model)
 
-    for message in validate_availability(availability):
+    for message in validate_availability(availability_data):
         print(message)
 
-    engine = Engine(tutor_model, session_model, availability)
+    engine = Engine(tutor_model, session_model, availability_data)
     solution = engine.solve()
 
     if solution is None:
@@ -47,6 +45,7 @@ def run_allocation(tutors: str, sessions: str, availability: str,
             pprint.pprint(solution)
         else:
             solution_to_csv(solution, sys.stdout)
+
 
 def main():
     parser = argparse.ArgumentParser(prog="allocate",

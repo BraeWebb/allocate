@@ -4,7 +4,7 @@ that other programs are able to parse with relative ease.
 """
 
 import csv
-from typing import Dict, List, Tuple
+from typing import Dict, Iterable, Tuple, List
 from dataclasses import dataclass
 from collections import defaultdict
 from itertools import islice
@@ -49,7 +49,7 @@ def _decode_timeslot(day: str, time: str) -> TimeSlot:
     return TimeSlot(day, start_hour, end_hour - start_hour)
 
 
-def _assign_columns_timeslots(days: List[str], times: List[str]):
+def _assign_columns_timeslots(days: Iterable[str], times: Iterable[str]):
     """Generates a dictionary that maps the column number of a CSV to the
     TimeSlot instance that the column represents.
 
@@ -80,7 +80,7 @@ def parse_doodle(filename: str) -> Dict[str, List[TimeSlot]]:
     to a list of all their available time slots.
     """
     with open(filename, 'r') as file:
-        reader = csv.reader(file)
+        reader = iter(csv.reader(file))
 
         # skip the first 4 rows since it is just doodle garbage
         reader = islice(reader, 4, None)
@@ -89,7 +89,7 @@ def parse_doodle(filename: str) -> Dict[str, List[TimeSlot]]:
         time_row = next(reader)
         days = _assign_columns_timeslots(day_row, time_row)
 
-        availabilities = defaultdict(list)
+        availabilities: Dict[str, List[TimeSlot]] = defaultdict(list)
         for row in reader:
             name = row[0]
 
@@ -105,8 +105,8 @@ def parse_doodle(filename: str) -> Dict[str, List[TimeSlot]]:
         return dict(availabilities)
 
 
-def parse_doodle_hack(filename: str, tutors: List[Tutor],
-                      sessions: List[Session]) \
+def parse_doodle_hack(filename: str, tutors: Iterable[Tutor],
+                      sessions: Iterable[Session]) \
         -> Dict[Tuple[Tutor, Session], bool]:
     """Parse a Doodle CSV to create a dictionary that maps a tutor name
     to a list of all their available time slots.
@@ -118,7 +118,7 @@ def parse_doodle_hack(filename: str, tutors: List[Tutor],
                             session.duration): session for session in sessions}
 
     with open(filename, 'r') as file:
-        reader = csv.reader(file)
+        reader = iter(csv.reader(file))
 
         # skip the first 4 rows since it is just doodle garbage
         reader = islice(reader, 4, None)
@@ -127,7 +127,7 @@ def parse_doodle_hack(filename: str, tutors: List[Tutor],
         time_row = next(reader)
         days = _assign_columns_timeslots(day_row, time_row)
 
-        availabilities = {}
+        availabilities: Dict[Tuple[Tutor, Session], bool] = {}
         for row in reader:
             name = row[0]
 
