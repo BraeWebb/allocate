@@ -1,5 +1,7 @@
 # Allocate
 
+![Run Unit Tests and Doctests](https://github.com/BraeWebb/allocate/workflows/Run%20Unit%20Tests%20and%20Doctests/badge.svg)
+
 Allocate is a project that uses a constraint solver to optimise the allocation of tutors to sessions. The problem that the project solves can also be generalised to staff allocation to pre-defined time slots.
 
 
