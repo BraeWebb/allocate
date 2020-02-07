@@ -30,18 +30,49 @@ def validate_availability(availabilities: Dict[Tuple[Tutor, Session], bool]):
             yield f"{session.id} does not have enough tutors to meet lower hour limit"
 
 
+class SolutionDebugger(cp_model.CpSolverSolutionCallback):
+    """Uses the solver callback to debug solutions."""
+
+    def __init__(self, engine, max_solutions=100):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self._engine = engine
+        self._max_solutions = max_solutions
+        self._solution_count = 0
+
+    def on_solution_callback(self):
+        if self._solution_count < self._max_solutions:
+            print(f"Solution {self._solution_count}")
+
+            for tutor in self._engine._tutors:
+                print(tutor.name, end=",")
+                for session in self._engine._sessions:
+                    is_working = self.Value(self._engine._vars[(tutor, session)])
+
+                    if is_working:
+                        print(session.id, end=',')
+                print()
+
+            print()
+        self._solution_count += 1
+
+    def solution_count(self):
+        return self._solution_count
+
+
 class Engine:
     """Engine uses the Google OR tools to develop the constraints for
     tutor allocation and find the optimal solution.
 
     If there are questions about this magic please contact Henry (just kidding Henry has a life now)
     """
-    def __init__(self, tutors: Iterable[Tutor], sessions: Iterable[Session], avail: Dict[Tuple[Tutor, Session], bool]):
+    def __init__(self, tutors: Iterable[Tutor], sessions: Iterable[Session],
+                 avail: Dict[Tuple[Tutor, Session], bool], debug: bool = False):
         self._model = cp_model.CpModel()
         self._vars: Dict[Tuple[Tutor, Session], cp_model.IntVar] = {}
         self._tutors = tutors
         self._sessions = sessions
         self._avail = avail
+        self.debug = debug
 
         self.generate_decls()
         self.assert_avail()
@@ -56,8 +87,10 @@ class Engine:
 
         self.assert_juniors()
         self.assert_clashes()
-        self.maximize_preferred_sessions()
-        self.maximize_contig()
+
+        if not debug:
+            self.maximize_preferred_sessions()
+            self.maximize_contig()
 
     def generate_decls(self):
         for tutor in self._tutors:
@@ -154,7 +187,14 @@ class Engine:
 
     def solve(self):
         solver = cp_model.CpSolver()
-        status = solver.Solve(self._model)
+        if self.debug:
+            debugger = SolutionDebugger(self)
+            status = solver.SearchForAllSolutions(self._model, debugger)
+            print(f"Found {debugger.solution_count()} solutions")
+            print()
+        else:
+            status = solver.Solve(self._model)
+
         if status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
             result = {}
             for tutor, session in self._vars:
