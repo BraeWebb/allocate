@@ -28,6 +28,6 @@ class Session:
     id: str
     day: Day
     start_time: int
+    duration: int = 1
     lower_tutor_count: int = 1
     upper_tutor_count: int = 1
-    duration: int = 1
