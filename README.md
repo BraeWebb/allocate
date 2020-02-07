@@ -74,17 +74,17 @@ The following tables represent the 3 example CSV files that come with the projec
 | P05 | 2                 | 2                 | Thu | 9          | 2        |
 
 ### availabilities.csv
-| "Poll ""Sample Doodle Availability""" |   |   |   |  |  |  |  |  |  |
-|---|---|---|---|---|---|---|---|---|---|
-| https://doodle\.com/poll/v7scx5pzwgeu3m2y |   |   |   |  |  |  |  |  |  |
-|   |   |   |   |  |  |  |  |  |  |
-|   | February 2020 |   |   |  |  |  |  |  |  |
-|   | Tue 4 |   |   | Wed 5 |  |  | Thu 6 | Fri 7 |  |
-|   | 11:00 AM – 1:00 PM | 1:00 PM – 3:00 PM | 3:00 PM – 5:00 PM | 8:00 AM – 9:00 AM | 9:00 AM – 10:00 AM | 12:00 PM – 2:00 PM | 9:00 AM – 11:00 AM | 11:00 AM – 12:00 PM | 12:00 PM – 1:00 PM |
-| Brae | OK |   | OK |  | OK | OK | OK |  | OK |
-| Henry | OK | OK | OK | OK |  |  | OK |  |  |
-| Emily |   | OK |   |  | OK | OK |  | OK | OK |
-| Count | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 2 | 2 |
+The first row is the day of the week of a session, second row represents the
+time of day in 24 hours and the third row is the duration of the session.
+Anything but a 1 in the availability cell of each tutor is treated as unavailable.
+
+|       | Tue | Tue | Tue | Wed | Wed | Wed | Thu | Fri | Fri |
+|-------|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+|       | 11  | 13  | 15  | 8   | 9   | 12  | 9   | 11  | 12  |
+|       | 2   | 2   | 2   | 1   | 1   | 2   | 2   | 1   | 1   |
+| Brae  | 1   |     | 1   |     | 1   | 1   | 1   |     | 1   |
+| Henry | 1   | 1   | 1   | 1   |     |     | 1   |     |     |
+| Emily |     | 1   |     |     | 1   | 1   |     | 1   | 1   |
 
 With the above files available in the current working directory, execution of the following command will produce the allocation below
 ```bash
