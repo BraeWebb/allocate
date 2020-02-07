@@ -51,13 +51,23 @@ class Availability:
 
         return instance
 
-    def get_available_slots(self, tutor: str) -> Iterable[TimeSlot]:
+    def get_available_slots(self, tutor: str) -> List[TimeSlot]:
         """Get the time slots a tutor is available"""
         return self._tutors_to_times[tutor]
 
     def is_available(self, tutor: str, session: TimeSlot) -> bool:
         """Determine if a tutor is available at the given timeslot"""
         return session in self.get_available_slots(tutor)
+
+    def set_available(self, tutor: str, session: TimeSlot, available: bool):
+        """Set a tutor as (un)available for a timeslot"""
+        slots = self.get_available_slots(tutor)
+        if available:
+            if session not in slots:
+                slots.append(session)
+        else:
+            if session in slots:
+                slots.remove(session)
 
     @property
     def tutors(self) -> Iterable[str]:

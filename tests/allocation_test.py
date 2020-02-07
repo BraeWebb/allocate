@@ -3,7 +3,7 @@ import os
 from unittest import TestCase
 from contextlib import redirect_stdout
 
-from allocate.allocation import run_allocation, stub_files
+from allocate.allocation import run, stub_files
 
 
 class AllocationTest(TestCase):
@@ -29,6 +29,13 @@ Henry,,,,,,"""
 ,Fri,11,1,,
 ,Fri,12,1,,"""
 
+    EXPECTED_UPDATED_AVAILABILITY = """,Tue,Tue,Tue,Wed,Wed,Wed,Thu,Fri,Fri
+,11,13,15,8,9,12,9,11,12
+,2,2,2,1,1,2,2,1,1
+Brae,,,,,1,,,,
+Henry,,,,,,,,,
+Emily,,,,,,,,,1"""
+
     def test_sample_allocation(self):
         """Tests to ensure standard allocation works as expected
 
@@ -36,8 +43,8 @@ Henry,,,,,,"""
         """
         output = io.StringIO()
         with redirect_stdout(output):
-            run_allocation("sample_tutors.csv", "sample_sessions.csv",
-                           "sample_availability.csv")
+            run("sample_tutors.csv", "sample_sessions.csv",
+                "sample_availability.csv")
 
         self.assertEqual(output.getvalue().split(),
                          AllocationTest.EXPECTED_ALLOCATION.split(),
@@ -51,8 +58,8 @@ Henry,,,,,,"""
         """
         output = io.StringIO()
         with redirect_stdout(output):
-            run_allocation("sample_tutors.csv", "sample_sessions.csv",
-                           "sample_doodle.csv", doodle=True)
+            run("sample_tutors.csv", "sample_sessions.csv",
+                "sample_doodle.csv", doodle=True)
 
         self.assertEqual(output.getvalue().split(),
                          AllocationTest.EXPECTED_ALLOCATION.split(),
@@ -94,6 +101,19 @@ Henry,,,,,,"""
             self.assertEqual([line.strip() for line in file.readlines()],
                              AllocationTest.EXPECTED_SESSIONS_STUB.split(),
                              "Session stub file does not match")
+
+    def test_update_availability(self):
+        """Tests that the --update-availability flag works as expected.
+
+        allocate --update-availability sample_tutors.csv sample_sessions.csv sample_availability.csv"""
+        output = io.StringIO()
+        with redirect_stdout(output):
+            run("sample_tutors.csv", "sample_sessions.csv",
+                "sample_availability.csv", update_availability=True)
+
+        self.assertEqual(output.getvalue().split(),
+                         AllocationTest.EXPECTED_UPDATED_AVAILABILITY.split(),
+                         "Updated availability output does not match")
 
     @classmethod
     def tearDownClass(cls):

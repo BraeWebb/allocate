@@ -2,10 +2,10 @@ import csv
 import sys
 import pprint
 import argparse
-from typing import Dict, List
+from typing import Dict, List, Iterable, Any
 
 from allocate.solver import validate_availability, Engine
-from allocate.model import Tutor, Session
+from allocate.model import Tutor, Session, TimeSlot
 from allocate.csvalidator import CSVModel
 from allocate.availability import Availability
 
@@ -49,8 +49,33 @@ def stub_files(tutors: str, sessions: str, availability: str,
             writer.writerow(["", session.day, session.start, session.duration, "", ""])
 
 
-def run_allocation(tutors: str, sessions: str, availability: str,
-                   doodle: bool = False, json: bool = False):
+def new_availability(sessions: Iterable[Session], availability: Availability,
+                     solution: Dict[str, Any]):
+    session_map = {session.id: TimeSlot(session.day.value, session.start_time,
+                                        session.duration)
+                   for session in sessions}
+
+    for tutor, allocated in solution.items():
+        for session in allocated:
+            slot = session_map[session]
+            availability.set_available(tutor, slot, False)
+
+    print(availability.to_csv())
+
+
+def run_allocation(tutors: Iterable[Tutor], sessions: Iterable[Session],
+                   availability: Availability):
+    matrix = availability.to_matrix(tutors, sessions)
+
+    for message in validate_availability(matrix):
+        print(message)
+
+    engine = Engine(tutors, sessions, matrix)
+    return engine.solve()
+
+
+def load_data(tutors: str, sessions: str, availability: str,
+              doodle: bool = False):
     tutor_model = CSVModel(Tutor)
     tutor_model.load(tutors, allow_defaults=True)
 
@@ -61,23 +86,34 @@ def run_allocation(tutors: str, sessions: str, availability: str,
         availability_data = Availability.from_doodle(availability)
     else:
         availability_data = Availability.from_csv(availability)
-    availability_matrix = availability_data.to_matrix(tutor_model, session_model)
 
-    for message in validate_availability(availability_matrix):
-        print(message)
+    return tutor_model, session_model, availability_data
 
-    engine = Engine(tutor_model, session_model, availability_matrix)
-    solution = engine.solve()
+
+def output_results(solution, json: bool = False):
+    if json:
+        pprint.pprint(solution)
+    else:
+        solution_to_csv(solution, sys.stdout)
+
+
+def run(tutors: str, sessions: str, availability: str,
+        doodle: bool = False, update_availability: bool = False,
+        json: bool = False):
+    data = load_data(tutors, sessions, availability,
+                     doodle=doodle)
+
+    solution = run_allocation(*data)
 
     if solution is None:
         print("No allocation was found because the allocation is infeasible.")
         print("Please ensure that a valid allocation is possible based on tutor availability.")
         print("If you think something is wrong, contact Brae at b.webb@uq.edu.au")
+
+    if update_availability:
+        new_availability(data[1], data[2], solution)
     else:
-        if json:
-            pprint.pprint(solution)
-        else:
-            solution_to_csv(solution, sys.stdout)
+        output_results(solution, json=json)
 
 
 def main():
@@ -91,6 +127,8 @@ def main():
     parser.add_argument('availability', type=str,
                         help='CSV file of tutors availabilities to sessions')
 
+    parser.add_argument('--update-availability', action='store_true',
+                        help='Allocate tutors and print the availability spreadsheet with allocation applied')
     parser.add_argument('--doodle', action='store_true',
                         help='Parse the input availability table as a doodle export')
     parser.add_argument('--stub', action='store_true',
@@ -104,8 +142,9 @@ def main():
         stub_files(args.tutors, args.sessions, args.availability,
                    doodle=args.doodle)
     else:
-        run_allocation(args.tutors, args.sessions, args.availability,
-                       doodle=args.doodle, json=args.json)
+        run(args.tutors, args.sessions, args.availability,
+            doodle=args.doodle, update_availability=args.update_availability,
+            json=args.json)
 
 
 if __name__ == '__main__':
