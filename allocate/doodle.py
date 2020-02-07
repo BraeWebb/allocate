@@ -4,11 +4,11 @@ that other programs are able to parse with relative ease.
 """
 
 import csv
-from typing import Dict, Iterable, Tuple, List
+from typing import Mapping, Iterable, Tuple, List
 from collections import defaultdict
 from itertools import islice
 
-from allocate.model import Tutor, Session, TimeSlot
+from allocate.model import TimeSlot
 
 
 def _hour_from_time(time: str) -> int:
@@ -68,7 +68,7 @@ def _assign_columns_timeslots(days: Iterable[str], times: Iterable[str]):
 
 # TODO: Abstract the 2 functions below
 
-def parse_doodle(filename: str) -> Dict[str, List[TimeSlot]]:
+def parse_doodle(filename: str) -> Mapping[str, List[TimeSlot]]:
     """Parse a Doodle CSV to create a dictionary that maps a tutor name
     to a list of all their available time slots.
     """
@@ -82,7 +82,7 @@ def parse_doodle(filename: str) -> Dict[str, List[TimeSlot]]:
         time_row = next(reader)
         days = _assign_columns_timeslots(day_row, time_row)
 
-        availabilities: Dict[str, List[TimeSlot]] = defaultdict(list)
+        availabilities: Mapping[str, List[TimeSlot]] = defaultdict(list)
         for row in reader:
             name = row[0]
 

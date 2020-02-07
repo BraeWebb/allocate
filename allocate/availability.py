@@ -2,7 +2,7 @@
 import io
 import csv
 from collections import defaultdict
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Tuple, List, Mapping
 
 from allocate.model import Tutor, Session, TimeSlot
 from allocate.doodle import parse_doodle_to_stub, parse_doodle
@@ -12,7 +12,7 @@ class Availability:
     """Availability represents the times a tutor indicates they are available."""
 
     def __init__(self):
-        self._tutors_to_times: Dict[str, Iterable[TimeSlot]] = {}
+        self._tutors_to_times: Mapping[str, List[TimeSlot]] = {}
         self._all_slots: Iterable[TimeSlot] = []
 
     @classmethod
@@ -37,7 +37,7 @@ class Availability:
 
             days = [TimeSlot(*slot) for slot in zip(day_row, time_row, duration_row)]
 
-            availabilities = defaultdict(list)
+            availabilities: Mapping[str, List[TimeSlot]] = defaultdict(list)
             for row in reader:
                 name = row[0]
 
@@ -101,8 +101,8 @@ class Availability:
         # write the columns for each time slot
         data = [(session.day, session.start, session.duration)
                 for session in self._all_slots]
-        for row in zip(*data):
-            writer.writerow(("",) + row)
+        for slot_row in zip(*data):
+            writer.writerow(("",) + slot_row)
 
         # write in availabilities
         blank_row = [""] + ["" for _ in self._all_slots]
