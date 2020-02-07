@@ -73,8 +73,8 @@ class Engine:
         session_patterns = [re.compile(tutor.session_preference) for tutor in self._tutors]
         tutors = zip(self._tutors, session_patterns)
         tutors_on_preferred = [self._vars[(tutor, session)]
-                              for tutor, pattern in tutors
-                              for session in self._sessions
+                               for tutor, pattern in tutors
+                               for session in self._sessions
                                if pattern.match(session.id)]
 
         self._model.Maximize(sum(tutors_on_preferred))
