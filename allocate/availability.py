@@ -2,9 +2,9 @@
 import io
 import csv
 from collections import defaultdict
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Tuple
 
-from allocate.model import TimeSlot
+from allocate.model import Tutor, Session, TimeSlot
 from allocate.doodle import parse_doodle_to_stub, parse_doodle
 
 
@@ -55,6 +55,10 @@ class Availability:
         """Get the time slots a tutor is available"""
         return self._tutors_to_times[tutor]
 
+    def is_available(self, tutor: str, session: TimeSlot) -> bool:
+        """Determine if a tutor is available at the given timeslot"""
+        return session in self.get_available_slots(tutor)
+
     @property
     def tutors(self) -> Iterable[str]:
         """All the tutors in this availability"""
@@ -69,6 +73,18 @@ class Availability:
         """Write the availability information to a CSV file"""
         with open(filename, 'w') as file:
             file.write(self.to_csv())
+
+    def to_matrix(self, tutors: Iterable[Tutor], sessions: Iterable[Session])\
+            -> Dict[Tuple[Tutor, Session], bool]:
+        matrix = {}
+        session_map = {TimeSlot(session.day.value, session.start_time,
+                                session.duration): session for session in sessions}
+
+        for slot, session in session_map.items():
+            for tutor in tutors:
+                matrix[(tutor, session)] = self.is_available(tutor.name, slot)
+
+        return matrix
 
     def to_csv(self) -> str:
         """Convert the availability information to a CSV file format"""

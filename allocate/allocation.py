@@ -7,7 +7,7 @@ from typing import Dict, List
 from allocate.solver import validate_availability, Engine
 from allocate.model import Tutor, Session
 from allocate.csvalidator import CSVModel
-from allocate.doodle import parse_doodle_to_stub, parse_doodle_hack
+from allocate.availability import Availability
 
 
 def solution_to_csv(solution: Dict[str, List[str]], output):
@@ -23,7 +23,7 @@ def solution_to_csv(solution: Dict[str, List[str]], output):
 def stub_files(tutors: str, sessions: str, availability: str):
     """Write out stub files for tutors and sessions based on the
     given availability file."""
-    tutors_names, sessions_details = parse_doodle_to_stub(availability)
+    availability = Availability.from_doodle(availability)
 
     with open(tutors, 'x') as file:
         writer = csv.writer(file)
@@ -32,7 +32,7 @@ def stub_files(tutors: str, sessions: str, availability: str):
         writer.writerow(Tutor.__annotations__.keys())
         columns = len(Tutor.__annotations__)
         # write tutor names
-        for tutor in sorted(tutors_names):
+        for tutor in sorted(availability.tutors):
             writer.writerow([tutor] + ["" for _ in range(columns - 1)])
 
     with open(sessions, 'x') as file:
@@ -41,7 +41,7 @@ def stub_files(tutors: str, sessions: str, availability: str):
         # write header
         writer.writerow(Session.__annotations__.keys())
         # write session names
-        for session in sessions_details:
+        for session in availability.sessions:
             writer.writerow(["", session.day, session.start, session.duration, "", ""])
 
 
@@ -53,12 +53,13 @@ def run_allocation(tutors: str, sessions: str, availability: str,
     session_model = CSVModel(Session)
     session_model.load(sessions, allow_defaults=True)
 
-    availability_data = parse_doodle_hack(availability, tutor_model, session_model)
+    availability_data = Availability.from_doodle(availability)
+    availability_matrix = availability_data.to_matrix(tutor_model, session_model)
 
-    for message in validate_availability(availability_data):
+    for message in validate_availability(availability_matrix):
         print(message)
 
-    engine = Engine(tutor_model, session_model, availability_data)
+    engine = Engine(tutor_model, session_model, availability_matrix)
     solution = engine.solve()
 
     if solution is None:

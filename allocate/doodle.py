@@ -66,7 +66,7 @@ def _assign_columns_timeslots(days: Iterable[str], times: Iterable[str]):
     return columns
 
 
-# TODO: Abstract the 3 functions below
+# TODO: Abstract the 2 functions below
 
 def parse_doodle(filename: str) -> Dict[str, List[TimeSlot]]:
     """Parse a Doodle CSV to create a dictionary that maps a tutor name
@@ -123,45 +123,6 @@ def parse_doodle_to_stub(filename: str) -> Tuple[Iterable[str], Iterable[TimeSlo
             tutors.add(name)
 
         return tutors, sessions
-
-
-def parse_doodle_hack(filename: str, tutors: Iterable[Tutor],
-                      sessions: Iterable[Session]) \
-        -> Dict[Tuple[Tutor, Session], bool]:
-    """Parse a Doodle CSV to create a dictionary that maps a tutor name
-    to a list of all their available time slots.
-
-    Hacked version to support the way the allocation engine requires.
-    """
-    tutor_map = {tutor.name: tutor for tutor in tutors}
-    session_map = {TimeSlot(session.day.value, session.start_time,
-                            session.duration): session for session in sessions}
-
-    with open(filename, 'r') as file:
-        reader = iter(csv.reader(file))
-
-        # skip the first 4 rows since it is just doodle garbage
-        reader = islice(reader, 4, None)
-
-        day_row = next(reader)
-        time_row = next(reader)
-        days = _assign_columns_timeslots(day_row, time_row)
-
-        availabilities: Dict[Tuple[Tutor, Session], bool] = {}
-        for row in reader:
-            name = row[0]
-
-            # last row is always a count of availabilities for a timeslot
-            if name == "Count":
-                break
-
-            # add every availability timeslot
-            for column, status in islice(enumerate(row), 1, None):
-                tutor = tutor_map[name]
-                session = session_map[days[column]]
-                availabilities[(tutor, session)] = status == "OK"
-
-        return availabilities
 
 
 if __name__ == "__main__":
