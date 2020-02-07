@@ -10,6 +10,7 @@ class Tutor:
     lower_hr_limit: int = 1
     upper_hr_limit: int = 1000000000
     daily_max: int = 1000000000
+    session_preference: str = "(.*)"
 
 
 class Day(Enum):

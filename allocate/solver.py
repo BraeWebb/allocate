@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 from typing import Iterable, Dict, Tuple, Any
 
@@ -55,7 +56,7 @@ class Engine:
 
         self.assert_juniors()
         self.assert_clashes()
-        self.maximize_tutor_count()
+        self.maximize_preferred_sessions()
         self.maximize_contig()
 
     def generate_decls(self):
@@ -68,8 +69,15 @@ class Engine:
             if not self._avail[(tutor, session)]:
                 self._model.Add(self._vars[(tutor, session)] == 0)
 
-    def maximize_tutor_count(self):
-        self._model.Maximize(sum([self._vars[(t, s)] for t in self._tutors for s in self._sessions]))
+    def maximize_preferred_sessions(self):
+        session_patterns = [re.compile(tutor.session_preference) for tutor in self._tutors]
+        tutors = zip(self._tutors, session_patterns)
+        tutors_on_preferred = [self._vars[(tutor, session)]
+                               for tutor, pattern in tutors
+                               for session in self._sessions
+                               if pattern.match(session.id)]
+
+        self._model.Maximize(sum(tutors_on_preferred))
 
     def assert_tutor_count(self, session):
         self._model.Add(session.lower_tutor_count <= sum([self._vars[(t, session)] for t in self._tutors]))

@@ -15,6 +15,7 @@ Allocate uses the following constraints to find an optimal allocation:
 - A session that requires multiple tutors cannot consist of only junior tutors
 - Amount of contiguous hours worked by tutors are optimised
 - A tutor cannot be assigned more than their daily maximum
+- Maximum the amount of session types a tutor prefers by allowing tutors to have a regex expression to match preferred session
 
 Doodle poll results which are exported as a CSV can be used automatically to indicate tutor availability.
 
@@ -53,11 +54,11 @@ allocate tutors.csv sessions.csv availability.csv
 The following tables represent the 3 example CSV files that come with the project.
 
 ### tutors.csv
-| name     | lower_hr_limit | upper_hr_limit | is_junior | daily_max | pref_contig |
-|----------|----------------|----------------|-----------|-----------|-------------|
-| Henry    | 1              | 10             | FALSE     | 8         | FALSE       |
-| Brae     | 1              | 10             | FALSE     | 10        | FALSE       |
-| Emily    | 1              | 6              | FALSE     | 3         | FALSE       |
+| name     | lower_hr_limit | upper_hr_limit | is_junior | daily_max | pref_contig | session_preference |
+|----------|----------------|----------------|-----------|-----------|-------------|--------------------|
+| Henry    | 1              | 10             | FALSE     | 8         | FALSE       | P(.*)              |
+| Brae     | 1              | 10             | FALSE     | 10        | FALSE       |                    |
+| Emily    | 1              | 6              | FALSE     | 3         | FALSE       | T(.*)              |
 
 ### sessions.csv
 | id  | lower_tutor_count | upper_tutor_count | day | start_time | duration |
