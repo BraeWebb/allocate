@@ -92,8 +92,8 @@ allocate tutors.csv sessions.csv availability.csv
 ```
 ```
 Henry,T01,P01,P02,P03,P05
-Brae,T04,P01,P03,P04,P05
-Emily,T02,T03,P02,P04
+Brae,T02,T04,P01,P03,P04,P05
+Emily,T03,P02,P04
 ```
 
 ## Support
