@@ -64,13 +64,13 @@ def new_availability(sessions: Iterable[Session], availability: Availability,
 
 
 def run_allocation(tutors: Iterable[Tutor], sessions: Iterable[Session],
-                   availability: Availability):
+                   availability: Availability, display_all: bool = False):
     matrix = availability.to_matrix(tutors, sessions)
 
     for message in validate_availability(matrix):
         print(message)
 
-    engine = Engine(tutors, sessions, matrix)
+    engine = Engine(tutors, sessions, matrix, debug=display_all)
     return engine.solve()
 
 
@@ -99,16 +99,17 @@ def output_results(solution, json: bool = False):
 
 def run(tutors: str, sessions: str, availability: str,
         doodle: bool = False, update_availability: bool = False,
-        json: bool = False):
+        json: bool = False, display_all: bool = False):
     data = load_data(tutors, sessions, availability,
                      doodle=doodle)
 
-    solution = run_allocation(*data)
+    solution = run_allocation(*data, display_all=display_all)
 
     if solution is None:
         print("No allocation was found because the allocation is infeasible.")
         print("Please ensure that a valid allocation is possible based on tutor availability.")
         print("If you think something is wrong, contact Brae at b.webb@uq.edu.au")
+        return
 
     if update_availability:
         new_availability(data[1], data[2], solution)
@@ -129,6 +130,8 @@ def main():
 
     parser.add_argument('--update-availability', action='store_true',
                         help='Allocate tutors and print the availability spreadsheet with allocation applied')
+    parser.add_argument('--all', action='store_true',
+                        help='Displays all the viable solutions found (max. 100), ignore optimisations just displays viable solutions')
     parser.add_argument('--doodle', action='store_true',
                         help='Parse the input availability table as a doodle export')
     parser.add_argument('--stub', action='store_true',
@@ -144,7 +147,7 @@ def main():
     else:
         run(args.tutors, args.sessions, args.availability,
             doodle=args.doodle, update_availability=args.update_availability,
-            json=args.json)
+            json=args.json, display_all=args.all)
 
 
 if __name__ == '__main__':
