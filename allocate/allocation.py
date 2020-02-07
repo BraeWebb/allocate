@@ -2,7 +2,7 @@ import csv
 import sys
 import pprint
 import argparse
-from typing import Dict, List, Iterable, Any
+from typing import Dict, List, Iterable, Any, Tuple
 
 from allocate.solver import validate_availability, Engine
 from allocate.model import Tutor, Session, TimeSlot
@@ -75,7 +75,7 @@ def run_allocation(tutors: Iterable[Tutor], sessions: Iterable[Session],
 
 
 def load_data(tutors: str, sessions: str, availability: str,
-              doodle: bool = False):
+              doodle: bool = False) -> Tuple[Iterable, Iterable, Availability]:
     tutor_model = CSVModel(Tutor)
     tutor_model.load(tutors, allow_defaults=True)
 
@@ -131,7 +131,8 @@ def main():
     parser.add_argument('--update-availability', action='store_true',
                         help='Allocate tutors and print the availability spreadsheet with allocation applied')
     parser.add_argument('--all', action='store_true',
-                        help='Displays all the viable solutions found (max. 100), ignore optimisations just displays viable solutions')
+                        help='Displays all the viable solutions found (max. 100),'
+                             'ignore optimisations just displays viable solutions')
     parser.add_argument('--doodle', action='store_true',
                         help='Parse the input availability table as a doodle export')
     parser.add_argument('--stub', action='store_true',
