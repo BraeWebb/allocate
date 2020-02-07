@@ -3,6 +3,17 @@ from dataclasses import dataclass
 
 
 @dataclass(eq=True, frozen=True)
+class TimeSlot:
+    """Data class used to represent a class that occupied a time slot.
+
+    This is practically used as a Session when the id of the session is unknown.
+    """
+    day: str
+    start: int
+    duration: int
+
+
+@dataclass(eq=True, frozen=True)
 class Tutor:
     name: str
     is_junior: bool

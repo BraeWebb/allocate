@@ -5,19 +5,10 @@ that other programs are able to parse with relative ease.
 
 import csv
 from typing import Dict, Iterable, Tuple, List
-from dataclasses import dataclass
 from collections import defaultdict
 from itertools import islice
 
-from allocate.model import Tutor, Session
-
-
-@dataclass(eq=True, frozen=True)
-class TimeSlot:
-    """Data class used to represent a class that occupied a time slot"""
-    day: str
-    start: int
-    duration: int
+from allocate.model import Tutor, Session, TimeSlot
 
 
 def _hour_from_time(time: str) -> int:
