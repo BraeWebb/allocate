@@ -121,6 +121,7 @@ Emily,T03,P02,P04
 This is an example of how to generate an allocation from doodle along with an extras allocation for weeks with extra tutors.
 
 Starting with a CSV file exported from doodle like the one below, named `doodle.csv`
+
 | "Poll ""Sample Doodle Availability""" |   |   |   |  |  |  |  |  |  |
 |---|---|---|---|---|---|---|---|---|---|
 | https://doodle\.com/poll/v7scx5pzwgeu3m2y |   |   |   |  |  |  |  |  |  |
