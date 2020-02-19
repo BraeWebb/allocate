@@ -2,22 +2,13 @@ import csv
 import sys
 import pprint
 import argparse
-from typing import Dict, List, Iterable, Any, Tuple
+from typing import Dict, Iterable, Any, Tuple
 
 from allocate.solver import validate_availability, Engine
 from allocate.model import Tutor, Session, TimeSlot
 from allocate.csvalidator import CSVModel
 from allocate.availability import Availability
-
-
-def solution_to_csv(solution: Dict[str, List[str]], output):
-    """Convert the solution dictionary produced by the solver into a
-    CSV file that can be distributed to tutors.
-    """
-    writer = csv.writer(output)
-
-    for name, sessions in solution.items():
-        writer.writerow([name, *sessions])
+from allocate.allocations import Allocation
 
 
 def stub_files(tutors: str, sessions: str, availability: str,
@@ -90,18 +81,16 @@ def load_data(tutors: str, sessions: str, availability: str,
     return tutor_model, session_model, availability_data
 
 
-def output_results(solution, json: bool = False):
+def output_results(solution: Allocation, json: bool = False):
     if json:
-        pprint.pprint(solution)
+        pprint.pprint(solution.allocations)
     else:
-        solution_to_csv(solution, sys.stdout)
+        solution.to_csv(sys.stdout)
 
 
-def run(tutors: str, sessions: str, availability: str,
-        doodle: bool = False, update_availability: bool = False,
-        json: bool = False, display_all: bool = False):
-    data = load_data(tutors, sessions, availability,
-                     doodle=doodle)
+def run(data: Tuple[Iterable, Iterable, Availability],
+        display_all: bool = False):
+
 
     solution = run_allocation(*data, display_all=display_all)
 
@@ -111,13 +100,10 @@ def run(tutors: str, sessions: str, availability: str,
         print("If you think something is wrong, contact Brae at b.webb@uq.edu.au")
         return
 
-    if update_availability:
-        new_availability(data[1], data[2], solution)
-    else:
-        output_results(solution, json=json)
+    return solution
 
 
-def main():
+def setup_parser():
     parser = argparse.ArgumentParser(prog="allocate",
                                      description="Allocate tutors to sessions")
 
@@ -127,6 +113,9 @@ def main():
                         help='CSV file containing session details')
     parser.add_argument('availability', type=str,
                         help='CSV file of tutors availabilities to sessions')
+
+    parser.add_argument('--allocation', default=None,
+                        help='CSV file which already contains an allocation')
 
     parser.add_argument('--update-availability', action='store_true',
                         help='Allocate tutors and print the availability spreadsheet with allocation applied')
@@ -140,15 +129,32 @@ def main():
     parser.add_argument('--json', action="store_true",
                         help='Output solution as a JSON object instead of default')
 
+    return parser
+
+
+def main():
+    parser = setup_parser()
+
     args = parser.parse_args()
 
     if args.stub:
         stub_files(args.tutors, args.sessions, args.availability,
                    doodle=args.doodle)
+        return
+
+    data = load_data(args.tutors, args.sessions, args.availability,
+                     doodle=args.doodle)
+
+    if args.allocation is None:
+        solution = run(data, display_all=args.all)
+        allocation = Allocation.from_solution(solution)
     else:
-        run(args.tutors, args.sessions, args.availability,
-            doodle=args.doodle, update_availability=args.update_availability,
-            json=args.json, display_all=args.all)
+        allocation = Allocation.from_csv(args.allocation)
+
+    if args.update_availability:
+        new_availability(data[1], data[2], allocation.allocations)
+    else:
+        output_results(allocation, json=args.json)
 
 
 if __name__ == '__main__':
