@@ -1,4 +1,4 @@
-name,lower_hr_limit,upper_hr_limit,is_junior,daily_max,pref_contig,session_preference
-Henry,1,10,FALSE,8,FALSE,P(.*)
-Brae,1,10,FALSE,10,FALSE,
-Emily,1,6,FALSE,3,FALSE,T(.*)
+name,lower_hr_limit,upper_hr_limit,is_junior,daily_max,pref_contig,session_preference,prefer
+Henry,1,10,FALSE,8,FALSE,P(.*),
+Brae,1,10,FALSE,10,FALSE,,
+Emily,1,6,FALSE,3,FALSE,T(.*),
