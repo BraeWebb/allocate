@@ -81,7 +81,7 @@ class Engine:
             self.assert_tutor_count(session)
 
         for tutor in tutors:
-            self.assert_upper_hr_limit(tutor)
+            self.assert_lower_hr_limit(tutor)
             self.assert_upper_hr_limit(tutor)
             self.assert_daily_max(tutor)
 
@@ -89,8 +89,13 @@ class Engine:
         self.assert_clashes()
 
         if not debug:
-            self.maximize_preferred_sessions()
-            self.maximize_contig()
+            preferred_sessions = self.maximize_preferred_sessions()
+            preferred_tutors = self.maximize_preferred_tutors()
+            contiguous_hours = self.maximize_contig()
+
+            self._model.Maximize(sum(preferred_sessions)
+                                 + sum(preferred_tutors)
+                                 + sum(contiguous_hours))
 
     def generate_decls(self):
         for tutor in self._tutors:
@@ -102,15 +107,23 @@ class Engine:
             if not self._avail[(tutor, session)]:
                 self._model.Add(self._vars[(tutor, session)] == 0)
 
+    def maximize_preferred_tutors(self):
+        preferred_tutors = [self._vars[(tutor, session)]
+                            for tutor in self._tutors
+                            for session in self._sessions
+                            if tutor.prefer]
+        return preferred_tutors
+
     def maximize_preferred_sessions(self):
         session_patterns = [re.compile(tutor.session_preference) for tutor in self._tutors]
         tutors = zip(self._tutors, session_patterns)
+
         tutors_on_preferred = [self._vars[(tutor, session)]
                                for tutor, pattern in tutors
                                for session in self._sessions
                                if pattern.match(session.id)]
 
-        self._model.Maximize(sum(tutors_on_preferred))
+        return tutors_on_preferred
 
     def assert_tutor_count(self, session):
         self._model.Add(session.lower_tutor_count <= sum([self._vars[(t, session)] for t in self._tutors]))
@@ -152,15 +165,19 @@ class Engine:
             for tutor in self._tutors:
                 self._model.Add(self._vars[(tutor, session1)] + self._vars[(tutor, session2)] < 2)
 
+    @staticmethod
+    def is_session_contiguous(session, other):
+        if session.start_time is None or session.day is None or \
+                session == other or session.day != other.day:
+            return False
+
+        return session.start_time + session.duration == other.start_time
+
     def get_contig_pairs(self):
         contiguous_pairs = set()
         for session in self._sessions:
             for other in self._sessions:
-                if session.start_time is None or session.day is None or \
-                        session == other or session.day != other.day:
-                    continue
-
-                if session.start_time + session.duration == other.start_time:
+                if self.is_session_contiguous(session, other):
                     contiguous_pairs.add(frozenset((session, other)))
 
         return contiguous_pairs
@@ -177,7 +194,7 @@ class Engine:
                     self._model.AddProdEquality(contig_decls[(tutor, session1, session2)],
                                                 (self._vars[(tutor, session1)], self._vars[(tutor, session2)]))
 
-        self._model.Maximize(sum(contig_decls.values()))
+        return contig_decls.values()
 
     def assert_daily_max(self, tutor):
         if tutor.daily_max is not None:
