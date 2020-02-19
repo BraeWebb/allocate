@@ -74,11 +74,11 @@ allocate tutors.csv sessions.csv updated_availability > extras.csv
 The following tables represent the 3 example CSV files that come with the project.
 
 ### tutors.csv
-| name     | lower_hr_limit | upper_hr_limit | is_junior | daily_max | pref_contig | session_preference |
-|----------|----------------|----------------|-----------|-----------|-------------|--------------------|
-| Henry    | 1              | 10             | FALSE     | 8         | FALSE       | P(.*)              |
-| Brae     | 1              | 10             | FALSE     | 10        | FALSE       |                    |
-| Emily    | 1              | 6              | FALSE     | 3         | FALSE       | T(.*)              |
+| name     | lower_hr_limit | upper_hr_limit | is_junior | daily_max | pref_contig | session_preference | prefer |
+|----------|----------------|----------------|-----------|-----------|-------------|--------------------| ------ |
+| Henry    | 1              | 10             | FALSE     | 8         | FALSE       | P(.*)              |        |
+| Brae     | 1              | 10             | FALSE     | 10        | FALSE       |                    |        |
+| Emily    | 1              | 6              | FALSE     | 3         | FALSE       | T(.*)              |        |
 
 ### sessions.csv
 | id  | lower_tutor_count | upper_tutor_count | day | start_time | duration |
@@ -119,6 +119,10 @@ Emily,T03,P02,P04
 
 ## Example 2
 This is an example of how to generate an allocation from doodle along with an extras allocation for weeks with extra tutors.
+
+At any point in the examples if the allocation takes a while to allocate it might be better to load allocations from a file.
+Once an allocation is generated and stored in a file named `allocation.csv` for example, the --allocation flag can be used
+in any of the commands to prefer the loaded allocation rather than generating again `--allocation allocation.csv`
 
 Starting with a CSV file exported from doodle like the one below, named `doodle.csv`
 
