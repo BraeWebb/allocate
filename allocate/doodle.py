@@ -33,7 +33,7 @@ def _decode_timeslot(day: str, time: str) -> TimeSlot:
     >>> _decode_timeslot("Mon", "1:00 PM – 3:00 PM")
     TimeSlot(day='Mon', start=13, duration=2)
     """
-    start, _, end = time.partition(" – ")
+    start, _, end = time.partition(" - ")
     start_hour = _hour_from_time(start)
     end_hour = _hour_from_time(end)
 
