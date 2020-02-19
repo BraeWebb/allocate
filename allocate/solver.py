@@ -1,9 +1,11 @@
 import re
+import sys
+import threading
+from datetime import datetime, timedelta
 from collections import defaultdict
-from typing import Iterable, Dict, Tuple, Any
+from typing import Iterable, Dict, Tuple, Any, Optional, List
 
 from ortools.sat.python import cp_model  # type: ignore
-
 from allocate.model import Tutor, Session
 
 
@@ -59,6 +61,49 @@ class SolutionDebugger(cp_model.CpSolverSolutionCallback):
         return self._solution_count
 
 
+class CountdownThread(threading.Thread):
+    """
+    Thread used to print information about running times
+    and timeouts to the user while allocations are performed.
+    """
+    # time in seconds until a warning should be made about long running times
+    LONG_DURATION = 10
+    # warning message for long durations
+    WARNING_MESSAGE = """Allocations are taking a while.
+This could indicate it will run indefinitely.
+You can set a timeout (in seconds) using the --timeout flag
+Otherwise you can get the current most optimal solution (and stop searching)
+by pressing ctrl-C"""
+    # time in seconds between prints of the countdown remaining
+    COUNTDOWN_STEP = 10
+
+    def __init__(self, event: threading.Event, duration: Optional[int]):
+        super().__init__()
+        now = datetime.utcnow()
+        self.start_time = now
+        self.stopped = event
+        self.warned = False
+
+        self.finished = None
+        if duration is not None:
+            self.finished = now + timedelta(seconds=duration)
+
+    def run(self):
+        while not self.stopped.wait(CountdownThread.COUNTDOWN_STEP):
+            now = datetime.utcnow()
+            seconds_running = (now - self.start_time).seconds
+
+            if self.finished is not None:
+                delta = self.finished - now
+                print(f"{delta.seconds // 60} mins {delta.seconds % 60} seconds",
+                      file=sys.stderr)
+
+            elif seconds_running > CountdownThread.LONG_DURATION \
+                    and not self.warned:
+                print(CountdownThread.WARNING_MESSAGE, file=sys.stderr)
+                self.warned = True
+
+
 class Engine:
     """Engine uses the Google OR tools to develop the constraints for
     tutor allocation and find the optimal solution.
@@ -81,7 +126,7 @@ class Engine:
             self.assert_tutor_count(session)
 
         for tutor in tutors:
-            self.assert_upper_hr_limit(tutor)
+            self.assert_lower_hr_limit(tutor)
             self.assert_upper_hr_limit(tutor)
             self.assert_daily_max(tutor)
 
@@ -89,8 +134,11 @@ class Engine:
         self.assert_clashes()
 
         if not debug:
-            self.maximize_preferred_sessions()
-            self.maximize_contig()
+            preferred_sessions = self.maximize_preferred_sessions()
+            preferred_tutors = self.maximize_preferred_tutors()
+            contiguous_hours = self.maximize_contig()
+
+            self._model.Maximize(sum(preferred_sessions) + sum(preferred_tutors) + sum(contiguous_hours))
 
     def generate_decls(self):
         for tutor in self._tutors:
@@ -102,15 +150,23 @@ class Engine:
             if not self._avail[(tutor, session)]:
                 self._model.Add(self._vars[(tutor, session)] == 0)
 
+    def maximize_preferred_tutors(self):
+        preferred_tutors = [self._vars[(tutor, session)]
+                            for tutor in self._tutors
+                            for session in self._sessions
+                            if tutor.prefer]
+        return preferred_tutors
+
     def maximize_preferred_sessions(self):
         session_patterns = [re.compile(tutor.session_preference) for tutor in self._tutors]
         tutors = zip(self._tutors, session_patterns)
+
         tutors_on_preferred = [self._vars[(tutor, session)]
                                for tutor, pattern in tutors
                                for session in self._sessions
                                if pattern.match(session.id)]
 
-        self._model.Maximize(sum(tutors_on_preferred))
+        return tutors_on_preferred
 
     def assert_tutor_count(self, session):
         self._model.Add(session.lower_tutor_count <= sum([self._vars[(t, session)] for t in self._tutors]))
@@ -152,15 +208,19 @@ class Engine:
             for tutor in self._tutors:
                 self._model.Add(self._vars[(tutor, session1)] + self._vars[(tutor, session2)] < 2)
 
+    @staticmethod
+    def is_session_contiguous(session, other):
+        if session.start_time is None or session.day is None or \
+                session == other or session.day != other.day:
+            return False
+
+        return session.start_time + session.duration == other.start_time
+
     def get_contig_pairs(self):
         contiguous_pairs = set()
         for session in self._sessions:
             for other in self._sessions:
-                if session.start_time is None or session.day is None or \
-                        session == other or session.day != other.day:
-                    continue
-
-                if session.start_time + session.duration == other.start_time:
+                if self.is_session_contiguous(session, other):
                     contiguous_pairs.add(frozenset((session, other)))
 
         return contiguous_pairs
@@ -177,7 +237,7 @@ class Engine:
                     self._model.AddProdEquality(contig_decls[(tutor, session1, session2)],
                                                 (self._vars[(tutor, session1)], self._vars[(tutor, session2)]))
 
-        self._model.Maximize(sum(contig_decls.values()))
+        return contig_decls.values()
 
     def assert_daily_max(self, tutor):
         if tutor.daily_max is not None:
@@ -185,8 +245,15 @@ class Engine:
                 self._model.Add(tutor.daily_max >= sum([self._vars[(tutor, s)] for s in self._sessions
                                                         if s.day == day]))
 
-    def solve(self):
+    def solve(self, timeout: Optional[int] = None):
+        finish_event = threading.Event()
+        countdown = CountdownThread(finish_event, timeout)
+        countdown.start()
+
         solver = cp_model.CpSolver()
+        if timeout is not None:
+            solver.parameters.max_time_in_seconds = timeout
+
         if self.debug:
             debugger = SolutionDebugger(self)
             status = solver.SearchForAllSolutions(self._model, debugger)
@@ -195,8 +262,11 @@ class Engine:
         else:
             status = solver.Solve(self._model)
 
+        print(f"Solved in {solver.UserTime()}", file=sys.stderr)
+        finish_event.set()
+
         if status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
-            result = {}
+            result: Dict[str, List[str]] = {}
             for tutor, session in self._vars:
                 if solver.Value(self._vars[(tutor, session)]) > 0:
                     result[tutor.name] = result.get(tutor.name, []) + [session.id]

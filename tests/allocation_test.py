@@ -3,7 +3,8 @@ import os
 from unittest import TestCase
 from contextlib import redirect_stdout
 
-from allocate.allocation import run, stub_files
+from allocate.allocation import load_data, run, stub_files, new_availability, output_results
+from allocate.allocations import Allocation
 
 
 class AllocationTest(TestCase):
@@ -13,10 +14,10 @@ class AllocationTest(TestCase):
 Brae,T04,P01,P03,P04,P05
 Emily,T02,T03,P02,P04"""
 
-    EXPECTED_TUTORS_STUB = """name,is_junior,pref_contig,lower_hr_limit,upper_hr_limit,daily_max,session_preference
-Brae,,,,,,
-Emily,,,,,,
-Henry,,,,,,"""
+    EXPECTED_TUTORS_STUB = """name,is_junior,pref_contig,prefer,lower_hr_limit,upper_hr_limit,daily_max,session_preference
+Brae,,,,,,,
+Emily,,,,,,,
+Henry,,,,,,,"""
 
     EXPECTED_SESSIONS_STUB = """id,day,start_time,duration,lower_tutor_count,upper_tutor_count
 ,Tue,11,2,,
@@ -43,8 +44,11 @@ Emily,,,,,,,,,1"""
         """
         output = io.StringIO()
         with redirect_stdout(output):
-            run("sample_tutors.csv", "sample_sessions.csv",
-                "sample_availability.csv")
+            data = load_data("sample_tutors.csv", "sample_sessions.csv",
+                             "sample_availability.csv")
+            solution = run(data)
+            allocation = Allocation.from_solution(solution)
+            output_results(allocation)
 
         self.assertEqual(output.getvalue().split(),
                          AllocationTest.EXPECTED_ALLOCATION.split(),
@@ -58,8 +62,11 @@ Emily,,,,,,,,,1"""
         """
         output = io.StringIO()
         with redirect_stdout(output):
-            run("sample_tutors.csv", "sample_sessions.csv",
-                "sample_doodle.csv", doodle=True)
+            data = load_data("sample_tutors.csv", "sample_sessions.csv",
+                             "sample_doodle.csv", doodle=True)
+            solution = run(data)
+            allocation = Allocation.from_solution(solution)
+            output_results(allocation)
 
         self.assertEqual(output.getvalue().split(),
                          AllocationTest.EXPECTED_ALLOCATION.split(),
@@ -108,8 +115,11 @@ Emily,,,,,,,,,1"""
         allocate --update-availability sample_tutors.csv sample_sessions.csv sample_availability.csv"""
         output = io.StringIO()
         with redirect_stdout(output):
-            run("sample_tutors.csv", "sample_sessions.csv",
-                "sample_availability.csv", update_availability=True)
+            data = load_data("sample_tutors.csv", "sample_sessions.csv",
+                             "sample_availability.csv")
+            solution = run(data)
+            allocation = Allocation.from_solution(solution)
+            new_availability(data[1], data[2], allocation.allocations)
 
         self.assertEqual(output.getvalue().split(),
                          AllocationTest.EXPECTED_UPDATED_AVAILABILITY.split(),
