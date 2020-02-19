@@ -119,6 +119,8 @@ def setup_parser():
 
     parser.add_argument('--update-availability', action='store_true',
                         help='Allocate tutors and print the availability spreadsheet with allocation applied')
+    parser.add_argument('--table', action='store_true',
+                        help='Display allocations as a timetable of a regular week')
     parser.add_argument('--all', action='store_true',
                         help='Displays all the viable solutions found (max. 100),'
                              'ignore optimisations just displays viable solutions')
@@ -153,6 +155,10 @@ def main():
 
     if args.update_availability:
         new_availability(data[1], data[2], allocation.allocations)
+
+    elif args.table:
+        allocation.to_table(data[1], sys.stdout)
+
     else:
         output_results(allocation, json=args.json)
 
