@@ -265,7 +265,7 @@ class Engine:
         else:
             status = solver.Solve(self._model)
 
-        print(f"Solved in {solver.UserTime()}")
+        print(f"Solved in {solver.UserTime()}", file=sys.stderr)
         finish_event.set()
 
         if status in (cp_model.FEASIBLE, cp_model.OPTIMAL):

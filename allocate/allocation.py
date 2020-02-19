@@ -60,7 +60,7 @@ def run_allocation(tutors: Iterable[Tutor], sessions: Iterable[Session],
     matrix = availability.to_matrix(tutors, sessions)
 
     for message in validate_availability(matrix):
-        print(message)
+        print(message, file=sys.stderr)
 
     engine = Engine(tutors, sessions, matrix, debug=display_all)
     return engine.solve(timeout=timeout)
