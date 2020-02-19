@@ -1,10 +1,13 @@
 """Handles the representation of an allocation"""
 import csv
-from typing import Mapping, List
+from typing import Mapping, List, Any
 from itertools import islice
 from collections import defaultdict
 
 from allocate.model import Session, Day, DAYS
+
+AllocationMatrix = Mapping[Day, Mapping[int, Mapping[str, List[str]]]]
+
 
 class Allocation:
     """An allocation of tutors to a set of classes they are allocated to"""
@@ -44,7 +47,7 @@ class Allocation:
         for name, sessions in self.allocations.items():
             writer.writerow([name, *sessions])
 
-    def to_matrix(self, sessions: List[Session]) -> Mapping[Day, Mapping[int, Mapping[str, List[str]]]]:
+    def to_matrix(self, sessions: List[Session]) -> AllocationMatrix:
         """Use session information to create a matrix from the allocations
 
         The result is a 3-dimensional matrix with an index of day, start time and
@@ -55,7 +58,7 @@ class Allocation:
         """
         session_map = {session.id: session for session in sessions}
 
-        matrix = defaultdict(lambda : defaultdict(lambda : defaultdict(list)))
+        matrix: AllocationMatrix = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
         for tutor, allocated in self.allocations.items():
             for session_id in allocated:
@@ -89,11 +92,11 @@ class Allocation:
         writer.writerow([""] + [day.value for day in days])
 
         for time in range(start_time, end_time):
-            row = [time]
+            row: List[Any] = [time]
             for day in days:
-                sessions = matrix[day][time]
+                session_map = matrix[day][time]
                 slot = ""
-                for session_id, tutors in sessions.items():
+                for session_id, tutors in session_map.items():
                     slot += f"{session_id}: {' & '.join(tutors)} "
                 row.append(slot)
 

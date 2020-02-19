@@ -3,7 +3,7 @@ import sys
 import threading
 from datetime import datetime, timedelta
 from collections import defaultdict
-from typing import Iterable, Dict, Tuple, Any, Optional
+from typing import Iterable, Dict, Tuple, Any, Optional, List
 
 from ortools.sat.python import cp_model  # type: ignore
 from allocate.model import Tutor, Session
@@ -73,8 +73,7 @@ class CountdownThread(threading.Thread):
 This could indicate it will run indefinitely.
 You can set a timeout (in seconds) using the --timeout flag
 Otherwise you can get the current most optimal solution (and stop searching)
-by pressing ctrl-C    
-"""
+by pressing ctrl-C"""
     # time in seconds between prints of the countdown remaining
     COUNTDOWN_STEP = 10
 
@@ -139,9 +138,7 @@ class Engine:
             preferred_tutors = self.maximize_preferred_tutors()
             contiguous_hours = self.maximize_contig()
 
-            self._model.Maximize(sum(preferred_sessions)
-                                 + sum(preferred_tutors)
-                                 + sum(contiguous_hours))
+            self._model.Maximize(sum(preferred_sessions) + sum(preferred_tutors) + sum(contiguous_hours))
 
     def generate_decls(self):
         for tutor in self._tutors:
@@ -269,7 +266,7 @@ class Engine:
         finish_event.set()
 
         if status in (cp_model.FEASIBLE, cp_model.OPTIMAL):
-            result = {}
+            result: Dict[str, List[str]] = {}
             for tutor, session in self._vars:
                 if solver.Value(self._vars[(tutor, session)]) > 0:
                     result[tutor.name] = result.get(tutor.name, []) + [session.id]

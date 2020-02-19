@@ -92,7 +92,6 @@ def output_results(solution: Allocation, json: bool = False):
 def run(data: Tuple[Iterable, Iterable, Availability],
         display_all: bool = False, timeout: int = None):
 
-
     solution = run_allocation(*data, display_all=display_all, timeout=timeout)
 
     if solution is None:
